@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+domain="${1}"
+lb_id="${2}"
+listener_name="${3:-https_listener}"
+lb_backend_name="${4:-AppBackends}"
+
+if [[ -z "$domain" ]]; then
+  echo "Domain name is required as first parameter"
+  exit 1
+fi
+
+if [[ -z "$lb_id" ]]; then
+  echo "Load Balancer id is required as second parameter"
+  exit 1
+fi
+
+cert_path="~/.getssl/$domain/"
+cert_number=$(date "+%Y-%m-%d_%H-%M")
+cert_name=$domain-$cert_number
+
+echo $cert_name
+
+OCI_CLI_AUTH="instance_principal" oci lb certificate create --load-balancer-id $lb_id --certificate-name $cert_name --public-certificate-file $cert_path$domain.crt --private-key-file $cert_path$domain.key
+
+sleep 30
+
+OCI_CLI_AUTH="instance_principal" oci lb listener update --force --listener-name $listener_name --default-backend-set-name $lb_backend_name --port 443 --protocol HTTP --load-balancer-id $lb_id --ssl-certificate-name $cert_name

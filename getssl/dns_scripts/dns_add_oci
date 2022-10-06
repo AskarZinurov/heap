@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+fulldomain="${1}"
+token="${2}"
+
+# Check initial parameters 
+if [[ -z "$fulldomain" ]]; then
+  echo "DNS script requires full domain name as first parameter"
+  exit 1
+fi
+if [[ -z "$token" ]]; then
+  echo "DNS script requires challenge token as second parameter"
+  exit 1
+fi
+
+NumParts=$(echo "$fulldomain" | awk -F"." '{print NF}')
+if [[ $NumParts -gt 2 ]]; then
+  domain=$(echo "$fulldomain" | awk -F\. '{print $(NF-1) FS $NF}')
+  txtrecordname="_acme-challenge$(echo "$fulldomain" | awk -F\. '{for (i=1; i<NF-1; i++) printf "." $i}')"
+else
+  domain=$fulldomain
+  txtrecordname="_acme-challenge"
+fi
+
+txtname="_acme-challenge.$fulldomain"
+
+OCI_CLI_AUTH="instance_principal" oci dns record domain patch --domain "$txtname" --items "[{ \"domain\": \"${txtname}\", \"rtype\": \"TXT\", \"ttl\": 60, \"operation\": \"ADD\", \"rdata\": \"$token\" }]" --zone-name-or-id "$domain"

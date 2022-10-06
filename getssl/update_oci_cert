@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+domain="${1}"
+cert_id="${2}"
+
+if [[ -z "$domain" ]]; then
+  echo "Domain name is required as first parameter"
+  exit 1
+fi
+
+if [[ -z "$cert_id" ]]; then
+  echo "Certificate id is required as second parameter"
+  exit 1
+fi
+
+cert_cert=$(cat "~/.getssl/$domain/$domain.crt")
+cert_chain=$(cat "~/.getssl/$domain/fullchain.crt")
+cert_key=$(cat "~/.getssl/$domain/$domain.key")
+
+OCI_CLI_AUTH="instance_principal" oci certs-mgmt certificate update-certificate-by-importing-config-details --certificate-id=$cert_id --cert-chain-pem="$cert_chain" --certificate-pem="$cert_cert" --private-key-pem="$cert_key"
